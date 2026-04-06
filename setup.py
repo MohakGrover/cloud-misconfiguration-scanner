@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="antigravity",
+    name="cloud_scanner",
     version="1.0.0",
     description="AWS Cloud Security Scanner",
     packages=find_packages(),
@@ -18,7 +18,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "antigravity=antigravity.cli.commands:cli",
+            "cloud_scanner=cloud_scanner.cli.commands:cli",
         ],
     },
     python_requires=">=3.9",

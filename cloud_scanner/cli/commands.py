@@ -1,12 +1,12 @@
 """
-CLI commands for AntiGravity
+CLI commands for Cloud Scanner
 """
 
 import click
 import logging
 import json
-from antigravity.core.scanner import CloudScanner
-from antigravity.core.config import Config
+from cloud_scanner.core.scanner import CloudScanner
+from cloud_scanner.core.config import Config
 
 # Configure logging
 logging.basicConfig(
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 def cli():
-    """AntiGravity - Cloud Security Scanner"""
+    """Cloud Scanner - Cloud Security Scanner"""
     pass
 
 @cli.command()

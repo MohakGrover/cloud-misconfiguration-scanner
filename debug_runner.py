@@ -5,7 +5,7 @@ import json
 
 def main():
     try:
-        from antigravity.core.scanner import CloudScanner
+        from cloud_scanner.core.scanner import CloudScanner
         scanner = CloudScanner(region='us-east-1')
         print("Starting scan...")
         scan_result = scanner.scan()

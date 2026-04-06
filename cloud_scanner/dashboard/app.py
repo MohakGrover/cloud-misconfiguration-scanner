@@ -1,11 +1,11 @@
 """
-Flask Application Entry Point for AntiGravity Dashboard
+Flask Application Entry Point for Cloud Scanner Dashboard
 """
 
 from flask import Flask, jsonify
 from flask_cors import CORS
-from antigravity.core.config import Config
-from antigravity.dashboard.api import api_bp
+from cloud_scanner.core.config import Config
+from cloud_scanner.dashboard.api import api_bp
 import os
 
 def create_app(test_config=None):

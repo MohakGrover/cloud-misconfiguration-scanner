@@ -1,11 +1,11 @@
 """
-Simple runner script for AntiGravity during development.
+Simple runner script for Cloud Scanner during development.
 Usage: python run.py [options]
 """
 
 import sys
 import os
-from antigravity.cli.commands import cli
+from cloud_scanner.cli.commands import cli
 
 if __name__ == "__main__":
     # Ensure current directory is in python path

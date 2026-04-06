@@ -1,11 +1,11 @@
 """
-API Routes for AntiGravity Dashboard
+API Routes for Cloud Scanner Dashboard
 """
 
 from flask import jsonify, request, current_app
 from . import api_bp
-from antigravity.core.scanner import CloudScanner
-from antigravity.core.config import Config
+from cloud_scanner.core.scanner import CloudScanner
+from cloud_scanner.core.config import Config
 import logging
 import threading
 import json

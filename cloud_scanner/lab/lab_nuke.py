@@ -83,7 +83,7 @@ class LabNuke:
                 
                 # Check tags (IAM ListUsers doesn't return tags by default, need to list tags or just match name pattern if tags not avail)
                 # For safety, let's just check name pattern for this prototype
-                if 'antigravity-lab-' in name:
+                if 'cloud_scanner-lab-' in name:
                      logger.info(f"Deleting User: {name}")
                      # Detach policies
                      policies = self.iam.list_attached_user_policies(UserName=name)
@@ -99,7 +99,7 @@ class LabNuke:
             response = self.iam.list_roles()
             for role in response.get('Roles', []):
                 name = role['RoleName']
-                if 'antigravity-lab-' in name:
+                if 'cloud_scanner-lab-' in name:
                     logger.info(f"Deleting Role: {name}")
                     
                     # Delete inline policies

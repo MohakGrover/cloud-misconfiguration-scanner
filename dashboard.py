@@ -6,18 +6,18 @@ import signal
 import sys
 
 def main():
-    print("Starting AntiGravity Dashboard...")
+    print("Starting Cloud Scanner Dashboard...")
     
     # Start Backend
     print("Starting Flask Backend on port 5000...")
     backend = subprocess.Popen(
-        [sys.executable, "-m", "antigravity.dashboard.app"],
+        [sys.executable, "-m", "cloud_scanner.dashboard.app"],
         cwd=os.getcwd()
     )
     
     # Start Frontend
     print("Starting React Frontend on port 3000...")
-    frontend_dir = os.path.join(os.getcwd(), "antigravity", "dashboard", "frontend")
+    frontend_dir = os.path.join(os.getcwd(), "cloud_scanner", "dashboard", "frontend")
     frontend = subprocess.Popen(
         ["npm", "run", "dev", "--", "--port", "3000"],
         cwd=frontend_dir,

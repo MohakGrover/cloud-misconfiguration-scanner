@@ -9,18 +9,18 @@ import logging
 from datetime import datetime
 from botocore.exceptions import NoCredentialsError, ClientError
 
-from antigravity.core.collectors.s3 import S3Collector
-from antigravity.core.collectors.security_groups import SecurityGroupCollector
-from antigravity.core.collectors.iam import IAMCollector
-from antigravity.core.collectors.rds import RDSCollector
-from antigravity.core.collectors.ec2 import EC2Collector
-from antigravity.rules.loader import RuleLoader
-from antigravity.rules.evaluator import RuleEvaluator
-from antigravity.models.finding import Finding
-from antigravity.models.scan import Scan
-from antigravity.analysis.risk_scoring import RiskScorer
-from antigravity.analysis.compliance import ComplianceAnalyzer
-from antigravity.core.config import Config
+from cloud_scanner.core.collectors.s3 import S3Collector
+from cloud_scanner.core.collectors.security_groups import SecurityGroupCollector
+from cloud_scanner.core.collectors.iam import IAMCollector
+from cloud_scanner.core.collectors.rds import RDSCollector
+from cloud_scanner.core.collectors.ec2 import EC2Collector
+from cloud_scanner.rules.loader import RuleLoader
+from cloud_scanner.rules.evaluator import RuleEvaluator
+from cloud_scanner.models.finding import Finding
+from cloud_scanner.models.scan import Scan
+from cloud_scanner.analysis.risk_scoring import RiskScorer
+from cloud_scanner.analysis.compliance import ComplianceAnalyzer
+from cloud_scanner.core.config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ class CloudScanner:
             Scan object with findings
         """
         logger.info("=" * 60)
-        logger.info("Starting AntiGravity Cloud Security Scan")
+        logger.info("Starting Cloud Scanner Cloud Security Scan")
         logger.info("=" * 60)
         logger.info(f"Region: {self.region}")
         logger.info(f"Rules loaded: {len(self.rules)}")

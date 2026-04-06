@@ -1,9 +1,9 @@
-# Cloud Misconfiguration Scanner (AntiGravity) 🚀
+# Cloud Misconfiguration Scanner (Cloud Scanner) 🚀
 
 [![Security: Cloud](https://img.shields.io/badge/Security-Cloud-blue.svg)](https://github.com/mohak/cloud-misconfiguration-scanner)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9+-yellow.svg)](https://python.org)
 
-**AntiGravity** is a powerful, automated cloud security scanner designed to identify misconfigurations across major cloud providers (initially supporting AWS). It analyzes your cloud infrastructure against security best practices, providing actionable findings and remediation steps.
+**Cloud Scanner** is a powerful, automated cloud security scanner designed to identify misconfigurations across major cloud providers (initially supporting AWS). It analyzes your cloud infrastructure against security best practices, providing actionable findings and remediation steps.
 
 ---
 
@@ -56,7 +56,7 @@
 
 3. **Setup the Frontend**:
    ```bash
-   cd antigravity/dashboard/frontend
+   cd cloud_scanner/dashboard/frontend
    npm install
    ```
 
@@ -85,7 +85,7 @@ python scan.py --provider aws --interactive
 
 2. **Start the Frontend**:
    ```bash
-   cd antigravity/dashboard/frontend
+   cd cloud_scanner/dashboard/frontend
    npm run dev
    ```
 Access the dashboard at `http://localhost:5173`.
@@ -96,7 +96,7 @@ Access the dashboard at `http://localhost:5173`.
 
 ```text
 .
-├── antigravity/        # Core logic, collectors, and analysis
+├── cloud_scanner/        # Core logic, collectors, and analysis
 ├── dashboard/          # Flask API and React frontend
 ├── rules/              # YAML security rules (S3, IAM, etc.)
 ├── scanners/           # Provider-specific scanner logic
@@ -119,4 +119,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-*Elevate your cloud security posture with AntiGravity.*
+*Elevate your cloud security posture with Cloud Scanner.*

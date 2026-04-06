@@ -15,9 +15,9 @@ console = Console()
 @click.option('--interactive', '-i', is_flag=True, help='Prompt for AWS credentials.')
 def scan(provider, out, profile, interactive):
     """
-    AntiGravity - Elevate Your Cloud Security Posture
+    Cloud Scanner - Elevate Your Cloud Security Posture
     """
-    console.print(f"[bold blue]Starting AntiGravity scan for provider: {provider}[/bold blue]")
+    console.print(f"[bold blue]Starting Cloud Scanner scan for provider: {provider}[/bold blue]")
 
     # 0. Handle Credentials
     aws_creds = {}

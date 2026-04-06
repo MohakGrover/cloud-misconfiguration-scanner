@@ -1,5 +1,5 @@
 """
-API Blueprint for AntiGravity Dashboard
+API Blueprint for Cloud Scanner Dashboard
 """
 
 from flask import Blueprint

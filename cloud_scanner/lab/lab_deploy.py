@@ -1,6 +1,6 @@
 """
 Validation Lab Deployer
-Creates intentionally misconfigured AWS resources to test AntiGravity scanner.
+Creates intentionally misconfigured AWS resources to test Cloud Scanner scanner.
 WARNING: This creates vulnerable resources. Use only in a sandbox account.
 """
 
@@ -41,14 +41,14 @@ class LabDeployer:
             
             logger.info("\nDeployment Complete!")
             logger.info("Run 'python run.py scan' to see findings.")
-            logger.info("Run 'python -m antigravity.lab.nuke' to cleanup.")
+            logger.info("Run 'python -m cloud_scanner.lab.nuke' to cleanup.")
             
         except Exception as e:
             logger.error(f"Deployment failed: {str(e)}")
 
     def _deploy_s3(self):
         """Create public S3 bucket"""
-        bucket_name = f"antigravity-lab-public-{self.tag_value}"
+        bucket_name = f"cloud_scanner-lab-public-{self.tag_value}"
         logger.info(f"Creating public S3 bucket: {bucket_name}")
         
         try:
@@ -93,7 +93,7 @@ class LabDeployer:
 
     def _deploy_security_group(self):
         """Create insecure security group"""
-        sg_name = f"antigravity-lab-sg-{self.tag_value}"
+        sg_name = f"cloud_scanner-lab-sg-{self.tag_value}"
         logger.info(f"Creating insecure Security Group: {sg_name}")
         
         try:
@@ -103,7 +103,7 @@ class LabDeployer:
             
             sg = self.ec2.create_security_group(
                 GroupName=sg_name,
-                Description="AntiGravity Lab - Insecure SG",
+                Description="Cloud Scanner Lab - Insecure SG",
                 VpcId=vpc_id,
                 TagSpecifications=[{
                     'ResourceType': 'security-group',
@@ -137,8 +137,8 @@ class LabDeployer:
 
     def _deploy_iam(self):
         """Create insecure IAM user and role"""
-        user_name = f"antigravity-lab-admin-{self.tag_value}"
-        role_name = f"antigravity-lab-role-{self.tag_value}"
+        user_name = f"cloud_scanner-lab-admin-{self.tag_value}"
+        role_name = f"cloud_scanner-lab-role-{self.tag_value}"
         
         logger.info(f"Creating permissive IAM User: {user_name}")
         try:
