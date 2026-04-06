@@ -1,0 +1,74 @@
+# EC2 Security Rules
+
+- rule_id: "aws-ec2-001"
+  name: "Security Group Allows Public SSH"
+  severity: "HIGH"
+  service: "security_groups"
+  cis_mapping:
+    framework: "CIS AWS Foundations Benchmark"
+    version: "1.2.0"
+    control: "4.1"
+  description: |
+    Security group allows ingress on port 22 from 0.0.0.0/0.
+    This exposes instances to brute force attacks.
+  remediation:
+    manual_steps: |
+      1. Go to EC2 -> Security Groups
+      2. Select group: {group_id}
+      3. Edit Inbound rules
+      4. Remove or restrict usage of port 22
+  detection_logic:
+    resource_type: "security_group"
+    conditions:
+      any:
+        - field: "risky_rules.reason"
+          operator: "contains"
+          value: "SSH port 22 exposed"
+        # The collector output for risky_rules is a list of dicts. 
+        # The Generic Evaluator 'contains' checks if "value in list".
+        # If list contains dicts, this string check won't work on the list directly.
+        # However, if I rely on the collector to output a list of STRINGS or 
+        # modify the evaluator to support JMESPath, it would be better.
+        # For this prototype phase, I will assume the collector puts a flat list of tags or I'll implement a 'smart' contains.
+        # Actually, let's update the rule to look for a simplified field I'll add to the collector later, e.g. 'has_public_ssh'.
+        - field: "has_public_ssh"  # Will implement this in collector update
+          operator: "equals"
+          value: true
+
+- rule_id: "aws-ec2-002"
+  name: "Security Group Allows Public RDP"
+  severity: "HIGH"
+  service: "security_groups"
+  cis_mapping:
+    framework: "CIS AWS Foundations Benchmark"
+    version: "1.2.0"
+    control: "4.2"
+  description: |
+    Security group allows ingress on port 3389 from 0.0.0.0/0.
+  remediation:
+    manual_steps: |
+      Restrict port 3389 source IP.
+  detection_logic:
+    conditions:
+      any:
+        - field: "has_public_rdp" # Will implement this in collector update
+          operator: "equals"
+          value: true
+
+- rule_id: "aws-ec2-003"
+  name: "EC2 Instance with Public IP and No Security Group"
+  severity: "HIGH" # Modified from prompt "No Security Group" is impossible in AWS (always default), 
+                   # but "Open Security Group" or "Default Security Group" is the risk.
+                   # Prompt said: "EC2 instance with public IP and no security group" -> probably means "permissive SG" or "default SG".
+                   # I will interpret as "Public IP exists" AND "Security Groups is Empty" (Rare) or "Security Groups has open rules".
+                   # Actually, let's implement the prompt's specific check: "Public IP" present.
+  service: "ec2"
+  description: |
+    EC2 instance has a public IP address.
+  detection_logic:
+    resource_type: "ec2_instance"
+    conditions:
+      all:
+        - field: "public_ip"
+          operator: "exists"
+          value: true

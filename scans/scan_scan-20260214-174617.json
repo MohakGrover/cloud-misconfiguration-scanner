@@ -1,0 +1,9 @@
+{
+  "scan_id": "scan-20260214-174617",
+  "timestamp": "2026-02-14T17:46:17.544803",
+  "region": "us-east-1",
+  "findings": [],
+  "resources_scanned": 6,
+  "duration_seconds": 12.757763,
+  "compliance_score": 100.0
+}

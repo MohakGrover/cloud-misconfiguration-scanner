@@ -1,0 +1,17 @@
+rule_id: "aws-iam-001"
+name: "IAM User MFA Not Enabled"
+description: "IAM user does not have MFA device enabled."
+severity: "MEDIUM"
+provider: "aws"
+service: "iam"
+remediation:
+  manual_steps: |
+    1. Go to IAM Console.
+    2. Select User > Security credentials.
+    3. Assign MFA device.
+detection_logic:
+  condition: "all"
+  checks:
+    - field: "mfa_active"
+      operator: "equals"
+      value: False

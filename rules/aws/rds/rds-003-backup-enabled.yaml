@@ -1,0 +1,17 @@
+rule_id: "aws-rds-003"
+name: "RDS Backup Not Enabled"
+description: "RDS instance does not have automated backups enabled."
+severity: "MEDIUM"
+provider: "aws"
+service: "rds"
+remediation:
+  manual_steps: |
+    1. Go to RDS Console.
+    2. Modify Instance > Additional configuration.
+    3. Set 'Backup retention period' to > 0 days.
+detection_logic:
+  condition: "all"
+  checks:
+    - field: "backup_retention_period"
+      operator: "equals"
+      value: 0

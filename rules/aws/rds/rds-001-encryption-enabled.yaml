@@ -1,0 +1,17 @@
+rule_id: "aws-rds-001"
+name: "RDS Instance Storage Not Encrypted"
+description: "RDS instance storage is not encrypted at rest."
+severity: "HIGH"
+provider: "aws"
+service: "rds"
+remediation:
+  manual_steps: |
+    1. Go to RDS Console.
+    2. Select Instance.
+    3. Modify instance to enable encryption (requires replacement/snapshot restore).
+detection_logic:
+  condition: "all"
+  checks:
+    - field: "storage_encrypted"
+      operator: "equals"
+      value: False

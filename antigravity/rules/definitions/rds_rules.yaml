@@ -1,0 +1,42 @@
+# RDS Security Rules
+
+- rule_id: "aws-rds-001"
+  name: "RDS Instance Publicly Accessible"
+  severity: "CRITICAL"
+  service: "rds"
+  cis_mapping:
+    framework: "CIS AWS Foundations Benchmark"
+    version: "1.2.0"
+    control: "4.5" # custom mapping
+  description: |
+    RDS instance is set to be publicly accessible.
+  remediation:
+    manual_steps: |
+      1. Go to RDS Console -> Databases
+      2. Select instance: {db_instance_identifier}
+      3. Modify -> Connectivity -> Additional configuration
+      4. Set "Publicly accessible" to "No"
+  detection_logic:
+    resource_type: "rds_instance"
+    conditions:
+      all:
+        - field: "publicly_accessible"
+          operator: "equals"
+          value: true
+
+- rule_id: "aws-rds-002"
+  name: "RDS Encryption Disabled"
+  severity: "HIGH"
+  service: "rds"
+  description: |
+    RDS instance storage is not encrypted.
+  remediation:
+    manual_steps: |
+      Enable encryption for RDS instance (requires recreation).
+  detection_logic:
+    resource_type: "rds_instance"
+    conditions:
+      all:
+        - field: "encrypted"
+          operator: "equals"
+          value: false

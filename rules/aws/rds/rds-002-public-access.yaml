@@ -1,0 +1,17 @@
+rule_id: "aws-rds-002"
+name: "RDS Instance Publicly Accessible"
+description: "RDS instance is publicly accessible from the internet."
+severity: "CRITICAL"
+provider: "aws"
+service: "rds"
+remediation:
+  manual_steps: |
+    1. Go to RDS Console.
+    2. Select Instance > Connectivity & security.
+    3. Set 'Public access' to 'No'.
+detection_logic:
+  condition: "all"
+  checks:
+    - field: "publicly_accessible"
+      operator: "equals"
+      value: True

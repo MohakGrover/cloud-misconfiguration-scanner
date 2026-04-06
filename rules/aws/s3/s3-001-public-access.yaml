@@ -1,0 +1,16 @@
+rule_id: "aws-s3-001"
+name: "S3 Bucket Publicly Accessible"
+description: "S3 bucket does not have Public Access Block enabled."
+severity: "CRITICAL"
+provider: "aws"
+service: "s3"
+remediation:
+  manual_steps: |
+    1. Go to S3 Console.
+    2. Select Bucket > Permissions.
+    3. Enable 'Block all public access'.
+detection_logic:
+  condition: "any"
+  checks:
+    - field: "public_access_block"
+      operator: "not_exists"

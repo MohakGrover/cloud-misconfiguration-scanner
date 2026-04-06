@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.lucid
+.ipynb_checkpoints
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Logs & Debug
+*.log
+error.txt
+backend_debug.log
+scan_debug.log
+
+# Scan Results
+results.json
+results_debug.json
+scans/findings_*.json
+
+# Environment & Private
+.env
+.flaskenv
+.secrets
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+build/
+
+# Personal Files (Excluded per conversation)
+CV_*.pdf
+
+# OS
+.DS_Store
+Thumbs.db

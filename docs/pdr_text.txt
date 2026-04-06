@@ -1,0 +1,1110 @@
+
+--- Page 1 ---
+Product Design & Requirements Document (PDR)
+Multi-Cloud Misconfiguration Security Scanner
+1. Product Vision & Problem Statement
+Vision
+Build a lightweight, education-focused Cloud Security Posture Management (CSPM) tool that empowers
+security learners and small teams to detect and understand cloud misconfigurations across AWS, Azure, and
+GCP through automated scanning, clear reporting, and hands-on validation environments.
+Problem Statement
+Cloud environments are increasingly complex, and misconfigurations remain the leading cause of cloud security
+breaches. Existing CSPM solutions are either:
+Enterprise-focused with steep learning curves and high costs
+Lacking multi-cloud support
+Opaque in their detection logic, making learning difficult
+Target Problem: Security engineers, cloud practitioners, and learners need an accessible, transparent tool to:
+Identify common cloud misconfigurations across multiple providers
+Understand why configurations are risky
+Practice detection in safe lab environments
+Learn CSPM architecture patterns
+2. Target Users & Personas
+Primary Persona: "Sam the Security Learner"
+Role: Security engineer, cloud practitioner, or student
+Experience: 1-3 years in cloud/security
+Goals:
+Learn cloud security fundamentals
+Build portfolio projects
+
+--- Page 2 ---
+Understand CSPM tools from the inside
+Pain Points:
+Expensive commercial tools for learning
+Difficulty understanding detection logic
+Need hands-on practice environments
+Tech Comfort: High (comfortable with CLI, code, APIs)
+Secondary Persona: "Alex the Small Team Lead"
+Role: Startup CTO, DevOps lead, solo security engineer
+Experience: 3-5 years, managing small cloud environments
+Goals:
+Quick security posture visibility
+Catch misconfigurations before they become incidents
+Lightweight tool without enterprise overhead
+Pain Points:
+Limited security budget
+No dedicated security team
+Need actionable findings, not just alerts
+Tech Comfort: High (hands-on with infrastructure)
+3. Core User Journeys
+Journey 1: First-Time Setup & Scan
+1. User clones repository and installs dependencies
+2. User configures cloud provider credentials (AWS/Azure/GCP)
+3. User runs first scan via CLI: python scan.py --provider aws
+4. System collects cloud configurations via APIs
+5. System runs CIS benchmark rules against collected data
+6. User views findings in terminal output (summary + severity)
+7. User opens web dashboard to see detailed findings
+8. User filters by severity, service, or compliance framework
+
+--- Page 3 ---
+Success Criteria: User can run their first scan and view results within 10 minutes
+Journey 2: Scanning Infrastructure-as-Code (IaC)
+1. User points scanner at Terraform files directory
+2. User runs: python scan.py --iac --path ./terraform
+3. System parses .tf files and extracts resource configurations
+4. System applies security rules to IaC definitions
+5. User sees "shift-left" findings before deployment
+6. User reviews specific file/line recommendations
+7. User fixes issues in Terraform code
+Success Criteria: User identifies IaC misconfigurations before cloud deployment
+Journey 3: Learning via Validation Lab
+1. User enters validation lab environment
+2. User deploys intentionally misconfigured resources (via Terraform modules)
+3. User runs scanner against lab environment
+4. User compares findings with known seeded misconfigurations
+5. User explores detection rule logic in codebase
+6. User modifies rules to experiment with detection
+Success Criteria: User understands how specific misconfigurations are detected
+Journey 4: Compliance Reporting
+1. User runs scan with compliance flag: python scan.py --compliance cis-aws
+2. System maps findings to CIS Benchmark controls
+3. User exports compliance report (JSON/CSV/HTML)
+4. User shares report with stakeholders
+5. User tracks remediation progress over time
+Success Criteria: User generates audit-ready compliance report
+4. Functional Requirements
+
+--- Page 4 ---
+FR-1: Cloud Configuration Collection
+FR-1.1: Connect to AWS using boto3 with IAM credentials (read-only)
+FR-1.2: Connect to Azure using Azure SDK with service principal
+FR-1.3: Connect to GCP using Google Cloud Client Libraries
+FR-1.4: Collect configurations for supported services:
+Storage (S3, Azure Blob, GCS buckets)
+Compute (EC2, VMs, GCE instances)
+Networking (Security Groups, NSGs, Firewall Rules)
+IAM (Policies, Roles, Service Accounts)
+Databases (RDS, Azure SQL, Cloud SQL)
+FR-1.5: Handle authentication errors gracefully with clear messages
+FR-1.6: Support multi-account scanning (multiple credential profiles)
+FR-2: Infrastructure-as-Code Scanning
+FR-2.1: Parse Terraform (.tf) files recursively from directory
+FR-2.2: Extract resource configurations (security groups, IAM, storage, etc.)
+FR-2.3: Apply security rules to IaC before deployment
+FR-2.4: Report findings with file path and line number
+FR-2.5: Support Terraform modules and variables resolution
+FR-2.6: AST-Based Parsing (Enhanced):
+Move beyond string matching to Abstract Syntax Tree (AST) parsing
+Use libraries: python-hcl2 + custom wrapper OR integrate Checkov/KICS engines
+Understand Terraform's semantic structure, not just syntax
+FR-2.7: Variable Resolution:
+Resolve variables from terraform.tfvars , *.auto.tfvars , and locals.tf
+Support environment variable interpolation (var.environment )
+Handle conditional expressions (count , for_each)
+Track variable precedence (CLI > tfvars > defaults)
+FR-2.8: Provider Context Mocking:
+Mock cloud environment state during IaC evaluation
+Example: Evaluate if security group attached to subnet has correct routing
+
+--- Page 5 ---
+Simulate resource relationships (VPC → Subnet → SG → Instance)
+Detect cross-resource misconfigurations before deployment
+FR-2.9: Module Traversal:
+Recursively parse Terraform module calls
+Resolve module sources (local paths, Terraform Registry, Git)
+Track variable flow from root to nested modules
+FR-3: Modular Rules Engine
+FR-3.1: Define rules as modular, human-readable YAML/JSON files
+FR-3.2: Each rule includes:
+Rule ID and name
+Description and remediation guidance
+Severity level (Critical, High, Medium, Low)
+CIS Benchmark mapping (e.g., CIS AWS 1.2.0 - Control 4.1)
+Detection logic (query/condition)
+Parent condition field (optional: skip rule if parent control is enabled)
+FR-3.3: Support rule customization (enable/disable, modify thresholds)
+FR-3.4: Allow users to add custom rules
+FR-3.5: Logic Hierarchy (Parent-Child Rules):
+Rules support parent-child dependencies to reduce false positives
+Example: If Account_Level_S3_Block_Public_Access  is True, skip individual bucket public access
+checks
+Parent conditions evaluated before child rules to optimize scan performance
+Hierarchical logic documented in rule metadata
+FR-3.6: Global Service Registry:
+Maintain a registry of global AWS services (IAM, Route53, CloudFront, Organizations)
+Flag global services to prevent redundant multi-region API calls
+Query global services once per account, not per region
+Prevents API throttling and improves scan speed by 40-60%
+FR-3.7: Rego Integration (Post-MVP):
+Transition from custom YAML to Open Policy Agent (OPA) Rego
+Rego as industry-standard policy language (learning objective for Sam)
+
+--- Page 6 ---
+Phase 3 feature: Gradual migration path from YAML to Rego
+Maintain backward compatibility during transition
+FR-4: Misconfiguration Detection
+Detect the following misconfiguration categories:
+Storage Security:
+Public S3/Blob/GCS buckets without encryption
+Buckets with public ACLs or policies
+Unencrypted storage at rest
+Network Security:
+Security groups with 0.0.0.0/0 access on sensitive ports (22, 3389, 3306)
+Network Security Groups allowing unrestricted inbound traffic
+Firewall rules exposing management ports
+IAM & Access Control:
+Overly permissive IAM roles (e.g., *:* permissions)
+Service accounts with excessive privileges
+Root account usage without MFA
+Access keys older than 90 days
+Database Security:
+RDS/SQL databases without encryption
+Databases publicly accessible
+Missing backup configurations
+Compute Security:
+Instances with public IPs without security groups
+Missing security patches/vulnerable AMIs
+Unencrypted EBS volumes
+
+--- Page 7 ---
+FR-5: Validation Lab
+FR-5.1: Provide Terraform modules to deploy intentionally misconfigured resources
+FR-5.2: Include at least 15 seeded misconfigurations across AWS/Azure/GCP
+FR-5.3: Document each seeded issue with expected detection
+FR-5.4: Include teardown scripts for easy cleanup
+FR-5.5: Tag lab resources to prevent accidental production scanning
+FR-5.6: Kill-Switch Tag (Safety Protocol):
+MANDATORY tag on every lab resource: ScannerLab: <ISO8601_Timestamp>
+Example: ScannerLab: 2026-01-13T14:30:00Z
+Prevents lab resources from being mistaken for production
+Enables automated identification and cleanup
+FR-5.7: Automated Nuke Script:
+Standalone Python script: lab_nuke.py
+Forcefully deletes ANY resource with ScannerLab tag older than 4 hours
+Runs independently of main scanner (can be scheduled via cron)
+Multi-cloud support (AWS, Azure, GCP cleanup logic)
+Sends summary report: resources deleted, costs prevented
+CRITICAL: Build nuke script BEFORE deploy script (safety-first)
+FR-5.8: Regional Lockdown:
+Lab restricted to single non-production region by default
+AWS: us-east-2 (Ohio) - lower cost, non-primary region
+Azure: East US 2
+GCP: us-central1
+Configuration file to override region (with warnings)
+FR-5.9: Lab Integrity Verification:
+Use terraform plan --detailed-exitcode  to detect drift
+Alert if lab resources modified outside Terraform
+Prevent "zombie" modifications that break expected findings
+FR-6: Web Dashboard
+FR-6.1: Display scan results in web interface (Flask/FastAPI backend)
+
+--- Page 8 ---
+FR-6.2: Show summary metrics:
+Total findings by severity
+Resources scanned count
+Compliance score percentage
+FR-6.3: Filterable findings table:
+Filter by severity, cloud provider, service, rule
+Search by resource ID or rule name
+FR-6.4: Detailed finding view:
+Resource details
+Rule description
+Remediation steps
+CIS mapping
+FR-6.5: Compliance report view (CIS Benchmark coverage)
+FR-6.6: Scan history (track findings over time)
+FR-6.7: Finding Suppression ("Snooze" Feature):
+Allow users to suppress/ignore findings for configurable duration (7, 30, 90 days)
+MANDATORY "Reason" text field (min 20 characters)
+Educational goal: Teach users to justify security exceptions
+Store suppressions in SQLite with: finding_id, suppressed_until, reason, user, timestamp
+Suppressed findings show as "muted" in dashboard with reason tooltip
+Auto-reactivate after expiration with notification
+FR-6.8: Remediation Preview (Dual Mode):
+Toggle between "Manual Steps" and "CLI Quick-Fix" in finding detail view
+Manual Steps: Human-readable console instructions with screenshots
+CLI Quick-Fix: Copy-pasteable commands (AWS CLI, az cli, gcloud)
+Example AWS S3:
+bash
+    aws s3api put-public-access-block     aws s3api put-public-access-block \\
+      --bucket my-bucket-name       --bucket my-bucket-name \\
+      --public-access-block-configuration       --public-access-block-configuration \\
+            "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true""BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+
+--- Page 9 ---
+One-click copy button with confirmation toast
+Terraform remediation snippets for IaC findings
+FR-6.9: Remediation Tracking:
+Mark findings as "In Progress" or "Resolved"
+Track mean-time-to-remediate (MTTR) per severity
+Show remediation history timeline
+FR-7: Reporting & Export
+FR-7.1: Export findings as JSON, CSV, HTML
+FR-7.2: Generate CIS Benchmark compliance reports
+FR-7.3: Email/Slack notification support for critical findings
+FR-7.4: Executive summary report (high-level metrics)
+5. Non-Functional Requirements
+NFR-1: Performance
+Scan 100 cloud resources in under 60 seconds
+Support scanning up to 1,000 resources without memory issues
+Dashboard loads initial view in under 3 seconds
+NFR-2: Usability
+CLI commands follow intuitive patterns (consistent with industry tools)
+Dashboard requires zero configuration to run locally
+Error messages are actionable (tell user what to fix)
+NFR-3: Security
+Store cloud credentials securely (environment variables, no hardcoding)
+Use read-only cloud permissions (least privilege)
+Sanitize outputs to prevent credential leakage in logs/reports
+Validate all inputs (file paths, commands) to prevent injection
+
+--- Page 10 ---
+NFR-4: Maintainability
+Modular architecture (separation of collectors, rules, UI)
+Well-documented code with docstrings
+Unit tests for rule logic (80%+ coverage goal)
+Easy to add new cloud providers or rules
+NFR-5: Portability
+Cross-platform (Windows, macOS, Linux)
+Containerized deployment option (Docker)
+Minimal dependencies (Python 3.9+, standard libraries where possible)
+NFR-6: Scalability (Learning Goal)
+Architecture supports future multi-threading for parallel scans
+Database schema designed for scan history storage (SQLite for MVP)
+6. System Architecture Overview
+High-Level Components
+┌─────────────────────────────────────────────────────┐┌─────────────────────────────────────────────────────┐
+│                   User Interface                    ││                   User Interface                    │
+│  ┌──────────────┐              ┌─────────────────┐ ││  ┌──────────────┐              ┌─────────────────┐ │
+│  │  CLI Tool    │              │  Web Dashboard  │ ││  │  CLI Tool    │              │  Web Dashboard  │ │
+│  └──────────────┘              └─────────────────┘ ││  └──────────────┘              └─────────────────┘ │
+└────────────┬─────────────────────────┬──────────────┘└────────────┬─────────────────────────┬──────────────┘
+                          │                         ││                         │
+                          ▼                         ▼▼                         ▼
+┌────────────────────────────────────────────────────┐┌────────────────────────────────────────────────────┐
+│              Orchestration Layer                   ││              Orchestration Layer                   │
+│          (Scan Controller / API)                   ││          (Scan Controller / API)                   │
+└────────────┬───────────────────────────────────────┘└────────────┬───────────────────────────────────────┘
+                          ││
+                          ▼▼
+┌────────────────────────────────────────────────────┐┌────────────────────────────────────────────────────┐
+│           Data Collection Layer                    ││           Data Collection Layer                    │
+│  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ ││  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ │
+│  │AWS Collector│  │Azure Collect│  │GCP Collect │ ││  │AWS Collector│  │Azure Collect│  │GCP Collect │ │
+
+--- Page 11 ---
+Technology Stack (MVP)
+Backend:
+Python 3.9+
+boto3 (AWS), azure-sdk-for-python, google-cloud-python
+IaC Parsing:
+Option A: python-hcl2 with custom AST wrapper
+Option B: Integrate Checkov/KICS parsing engines (recommended for production-grade)
+Database: DuckDB (replaces SQLite)
+Rationale: Better analytical query performance for compliance scoring
+SQL-compatible with embedded OLAP capabilities
+Handles time-series scan data more efficiently
+Rules Engine:
+Phase 1: YAML-based custom engine
+Phase 3: Open Policy Agent (OPA) with Rego policies
+│  └─────────────┘  └─────────────┘  └────────────┘ ││  └─────────────┘  └─────────────┘  └────────────┘ │
+│  ┌──────────────────────────────────────────────┐ ││  ┌──────────────────────────────────────────────┐ │
+│  │      IaC Scanner (Terraform Parser)          │ ││  │      IaC Scanner (Terraform Parser)          │ │
+│  └──────────────────────────────────────────────┘ ││  └──────────────────────────────────────────────┘ │
+└────────────┬───────────────────────────────────────┘└────────────┬───────────────────────────────────────┘
+                          ││
+                          ▼▼
+┌────────────────────────────────────────────────────┐┌────────────────────────────────────────────────────┐
+│            Rules Engine                            ││            Rules Engine                            │
+│  ┌──────────────────────────────────────────────┐ ││  ┌──────────────────────────────────────────────┐ │
+│  │  Rule Loader (YAML/JSON)                     │ ││  │  Rule Loader (YAML/JSON)                     │ │
+│  │  Rule Evaluator (Condition Matching)         │ ││  │  Rule Evaluator (Condition Matching)         │ │
+│  │  CIS Benchmark Mapper                        │ ││  │  CIS Benchmark Mapper                        │ │
+│  └──────────────────────────────────────────────┘ ││  └──────────────────────────────────────────────┘ │
+└────────────┬───────────────────────────────────────┘└────────────┬───────────────────────────────────────┘
+                          ││
+                          ▼▼
+┌────────────────────────────────────────────────────┐┌────────────────────────────────────────────────────┐
+│         Data Storage & Reporting                   ││         Data Storage & Reporting                   │
+│  ┌──────────────┐              ┌─────────────────┐││  ┌──────────────┐              ┌─────────────────┐│
+│  │  SQLite DB   │              │  Report Gen     │││  │  SQLite DB   │              │  Report Gen     ││
+│  │(Scan History)│              │(JSON/CSV/HTML)  │││  │(Scan History)│              │(JSON/CSV/HTML)  ││
+│  └──────────────┘              └─────────────────┘││  └──────────────┘              └─────────────────┘│
+└────────────────────────────────────────────────────┘└────────────────────────────────────────────────────┘
+
+--- Page 12 ---
+Flask or FastAPI (web API)
+Authentication:
+Prioritize OIDC / IAM Roles for cloud credentials (temporary credentials)
+Avoid static keys stored in environment variables
+Support AWS STS AssumeRole, Azure Managed Identity, GCP Workload Identity
+Frontend (Dashboard):
+React or Vue.js (simple SPA)
+Chart.js or Recharts (visualizations)
+Tailwind CSS (styling)
+Infrastructure:
+Docker (optional containerization)
+GitHub Actions (CI/CD for testing)
+Pre-commit Hooks: Detect credential leaks, enforce .gitignore  rules
+Security:
+Exponential backoff for API throttling (collectors)
+.gitignore  validation in setup script
+Secrets scanning (detect-secrets, gitleaks integration)
+7. UI/UX Wireframe Descriptions
+Dashboard Home Page
+Layout:
+Header: Logo, "Multi-Cloud Security Scanner", navigation (Home | Scans | Rules | Lab | Settings)
+Summary Cards (Top Row):
+Total Findings (color-coded by severity)
+Critical Issues Count (red badge)
+Resources Scanned Count
+Compliance Score % (circular progress)
+
+--- Page 13 ---
+Findings Table (Main Section):
+Columns: Severity | Resource | Service | Rule Name | Cloud Provider | Action
+Filter bar above: Severity dropdown, Provider dropdown, Search box
+Row click → opens detailed finding modal
+Sidebar (Right):
+Recent Scans (timestamp, provider, findings count)
+Quick Actions: "New Scan", "View Compliance Report", "Export Data"
+Scan Detail Modal
+Content:
+Top: Resource ID, Resource Type, Cloud Provider icon
+Severity Badge: Critical/High/Medium/Low with icon
+Sections:
+1. What's Wrong: Plain language description
+2. Why It Matters: Risk explanation
+3. How to Fix: Step-by-step remediation (CLI commands, console steps)
+4. CIS Mapping: Benchmark control reference
+5. Raw Data: Collapsible JSON of resource configuration
+Footer Buttons: "Mark as False Positive", "Remediation Guide", "Close"
+Compliance Report Page
+Layout:
+Benchmark Selector: Dropdown (CIS AWS 1.2.0, CIS Azure, CIS GCP)
+Progress Ring: Overall compliance score (%)
+Control Table:
+Columns: Control ID | Description | Status (Pass/Fail) | Findings Count
+Color coding: Green (pass), Red (fail), Gray (not applicable)
+Export Button: Download as PDF/CSV/HTML
+Validation Lab Page
+Layout:
+
+--- Page 14 ---
+Introduction Section: "Practice scanning in a safe environment"
+Deploy Lab Button: "Deploy Misconfigured Resources"
+Lab Status: Resource count, deployment status, teardown button
+Expected Findings Checklist:
+List of seeded misconfigurations with checkboxes
+User can check off as they discover them
+Scan Lab Button: Triggers scan against lab environment
+8. Feature Prioritization
+MVP (Phase 1) - Core Detection & Reporting
+Must-Have (Weeks 1-4):
+FR-1: AWS configuration collection (S3, EC2, IAM, Security Groups, RDS)
+FR-3: Basic rules engine (5-10 core rules in YAML)
+FR-4: Detection for top 5 misconfigurations (public buckets, open security groups, weak IAM)
+FR-6: Simple web dashboard (findings table, basic filters)
+FR-7: JSON/CSV export
+CLI tool for triggering scans
+Should-Have (Weeks 5-6):
+FR-2: Terraform IaC scanning
+FR-5: Validation lab (AWS only, 5 seeded issues)
+FR-6: Compliance report view (CIS AWS)
+Could-Have (Week 7-8):
+FR-1: Azure configuration collection
+FR-6: Scan history tracking
+NFR-4: Unit tests for rule engine
+Phase 2 - Multi-Cloud & Enhanced UX
+Priorities (Weeks 9-12):
+
+--- Page 15 ---
+FR-1: GCP configuration collection
+FR-4: Expand to 25+ detection rules across AWS/Azure/GCP
+FR-5: Validation lab (Azure & GCP)
+FR-6: Enhanced dashboard (charts, trend graphs, executive summary)
+FR-7: HTML report generation
+NFR-4: Comprehensive documentation
+Phase 3 - Automation & Intelligence (Post-MVP)
+Advanced Features (Weeks 13+):
+Auto-Remediation Suggestions:
+Generate Terraform/CloudFormation fix snippets
+One-click copy remediation code
+Dry-run remediation preview
+CI/CD Pipeline Integration:
+GitHub Actions plugin
+GitLab CI integration
+Pre-commit hooks for IaC scanning
+Pull request comments with findings
+Scheduled Background Scans:
+Cron-like scan scheduler
+Drift detection (compare scans over time)
+Email alerts for new critical findings
+Automated Compliance Reporting:
+Scheduled compliance report generation
+Slack/Teams webhook integrations
+Trend tracking (compliance score over time)
+Advanced Analytics:
+Risk scoring algorithm (CVSS-like)
+Resource inventory dashboard
+Mean-time-to-remediate (MTTR) metrics
+Multi-Tenancy:
+
+--- Page 16 ---
+Support for multiple AWS accounts/Azure subscriptions
+Organization-wide scanning
+Role-based access control (RBAC) for dashboard
+9. Success Metrics (KPIs)
+Learning Metrics (Primary Goal)
+Complete end-to-end implementation (all MVP features)
+Understand CSPM architecture patterns
+Successfully detect 15+ misconfiguration types
+Deploy and validate lab environment
+Product Metrics (If Shared Publicly)
+Detection Coverage: 25+ unique misconfiguration rules across 3 clouds
+Scan Speed: <60 seconds for 100 resources
+Accuracy: <5% false positive rate in validation lab
+Usability: First scan completed in <10 minutes (measured via lab testing)
+Technical Metrics
+Code coverage: 80%+ for rules engine
+Documentation: README + API docs + rule documentation
+Performance: Zero-crash rate for MVP features
+10. Risks & Assumptions
+Risks
+Risk Impact Mitigation
+R1: Cloud API Rate
+Limits
+Slow scans, failed collectionImplement retry logic, batch requests, use SDK best
+practices
+
+--- Page 17 ---
+Risk Impact Mitigation
+R2: Credential
+Management
+Complexity
+Security risk, user frictionUse standard credential chains (AWS profiles, env vars),
+document clearly
+R3: Rule Maintenance
+Burden
+Outdated rules, false positivesVersion control rules, document sources, plan for updates
+R4: Terraform
+Parsing Complexity
+IaC scanning failures Start with simple .tf files, iterate on parser, handle edge
+cases gracefully
+R5: Validation Lab
+Costs
+Unexpected cloud bills Use minimal resources, add budget alerts, provide clear
+teardown instructions
+R6: Scope Creep Project never finishes Strict MVP definition, defer Phase 3 features
+R7: API Throttling at
+Scale
+Scan fails on large accounts
+(1000+ resources)
+Implement exponential backoff in collectors, use Global
+Service Registry to reduce redundant calls, batch API
+requests where supported
+R8: Credential
+Leakage
+User accidentally pushes .env
+or credentials to GitHub
+Add .gitignore  check in setup script, integrate pre-commit
+hooks (detect-secrets, gitleaks), validate .gitignore  before
+first commit
+R9: Lab Resource
+Drift
+Lab resources modified outside
+Terraform, breaking expected
+findings
+Use terraform plan --detailed-exitcode  to verify lab
+integrity before scans, automated nuke script prevents long-
+lived drift, alert users on drift detection
+Assumptions
+ID Assumption Validation Plan
+A1 Users have basic cloud provider knowledgeDocument prerequisites in README
+A2 Users run on Python 3.9+ compatible systemsSpecify requirements, test on Mac/Linux/Windows
+A3 Read-only cloud permissions are sufficient Validate with AWS Security Audit policy equivalent
+A4 CIS Benchmarks are accessible for referenceLink to free CIS resources, extract key rules
+A5 SQLite is adequate for scan history Test with 100+ scans, measure performance
+A6 Users prefer CLI + web UI over CLI-onlyValidate via user persona research
+
+--- Page 18 ---
+11. Open Questions & Decisions Needed
+Technical Decisions
+Q1: Use Flask or FastAPI for web backend? (Recommend: Flask for simplicity, FastAPI if async needed)
+Q2: Frontend framework? (Recommend: React with Vite for speed)
+Q3: Terraform parser library? (Test: pyhcl2 vs python-hcl2)
+Q4: Rule format YAML vs JSON? (Recommend: YAML for readability)
+Product Decisions
+Q5: Free tier cloud accounts sufficient for lab? (Validate AWS Free Tier limits)
+Q6: Support policy-as-code formats (OPA)? (Defer to Phase 3)
+Q7: Mobile-responsive dashboard needed? (Recommend: Yes, but basic)
+12. Development Roadmap
+Week 1-2: Foundation
+Set up project structure
+AWS collector (S3, Security Groups)
+Basic rules engine (YAML loader)
+3 core detection rules
+Week 3-4: MVP Core
+EC2, IAM, RDS collectors
+Web dashboard skeleton (Flask + React)
+Findings table UI
+CLI tool polish
+Week 5-6: IaC & Lab
+Terraform parser
+IaC scanning logic
+Validation lab (AWS, 5 issues)
+
+--- Page 19 ---
+CIS compliance mapping
+Week 7-8: Polish & Test
+Unit tests
+Documentation
+CSV/JSON export
+Bug fixes
+Week 9-12: Multi-Cloud (Phase 2)
+Azure & GCP collectors
+Expand to 25+ rules
+Enhanced dashboard features
+Week 13+: Automation (Phase 3)
+CI/CD integrations
+Scheduled scans
+Auto-remediation suggestions
+Appendix: Example Rules Structure
+Rule File Example (YAML) - With Parent-Child Logic
+yaml
+
+--- Page 20 ---
+rule_idrule_id::  "aws-s3-001""aws-s3-001"
+namename::  "S3 Bucket Publicly Accessible""S3 Bucket Publicly Accessible"
+descriptiondescription::  "S3 bucket allows public read access, potentially exposing sensitive data""S3 bucket allows public read access, potentially exposing sensitive data"
+severityseverity::  "CRITICAL""CRITICAL"
+providerprovider::  "aws""aws"
+serviceservice::  "s3""s3"
+cis_mappingcis_mapping::
+    --  frameworkframework::  "CIS AWS Foundations Benchmark""CIS AWS Foundations Benchmark"
+        versionversion::  "1.2.0""1.2.0"
+        controlcontrol::  "2.1.5""2.1.5"
+parent_conditionparent_condition::
+    # Skip this rule if account-level block is enabled# Skip this rule if account-level block is enabled
+    rule_idrule_id::  "aws-s3-000""aws-s3-000"
+    fieldfield::  "account_public_access_block.block_public_acls""account_public_access_block.block_public_acls"
+    operatoroperator::  "equals""equals"
+    valuevalue::  truetrue
+    skip_if_parent_passesskip_if_parent_passes::  truetrue
+remediationremediation::
+    manual_stepsmanual_steps::  ||
+    1. Navigate to S3 console    1. Navigate to S3 console
+    2. Select the bucket    2. Select the bucket
+    3. Go to Permissions > Block Public Access    3. Go to Permissions > Block Public Access
+    4. Enable "Block all public access"    4. Enable "Block all public access"
+    cli_commandcli_command::  ||
+    aws s3api put-public-access-block \    aws s3api put-public-access-block \
+      --bucket {bucket_name} \      --bucket {bucket_name} \
+      --public-access-block-configuration \      --public-access-block-configuration \
+      "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"      "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+    terraform_fixterraform_fix::  ||
+    resource "aws_s3_bucket_public_access_block" "example" {    resource "aws_s3_bucket_public_access_block" "example" {
+      bucket = aws_s3_bucket.example.id      bucket = aws_s3_bucket.example.id
+            
+      block_public_acls       = true      block_public_acls       = true
+      block_public_policy     = true      block_public_policy     = true
+      ignore_public_acls      = true      ignore_public_acls      = true
+      restrict_public_buckets = true      restrict_public_buckets = true
+    }    }
+detection_logicdetection_logic::
+    conditioncondition::  "any""any"
+    checkschecks::
+        --  fieldfield::  "public_access_block_configuration""public_access_block_configuration"
+            operatoroperator::  "not_exists""not_exists"
+        --  fieldfield::  "bucket_policy.Statement[*].Principal""bucket_policy.Statement[*].Principal"
+            operatoroperator::  "contains""contains"
+            valuevalue::  "*""*"
+            ANDAND::
+
+--- Page 21 ---
+Global Service Registry Example (Python)
+IaC Parser Implementation Guide
+Variable Resolution Architecture
+                fieldfield::  "bucket_policy.Statement[*].Effect""bucket_policy.Statement[*].Effect"
+                operatoroperator::  "equals""equals"
+                valuevalue::  "Allow""Allow"
+python
+GLOBAL_SERVICES GLOBAL_SERVICES ==  {{
+        'aws''aws'::  [[
+                'iam''iam',,                      # IAM is global# IAM is global
+                'route53''route53',,              # DNS is global# DNS is global
+                'cloudfront''cloudfront',,        # CDN is global# CDN is global
+                'organizations''organizations',,  # AWS Organizations is global# AWS Organizations is global
+                'waf''waf'                      # WAF v2 is global# WAF v2 is global
+        ]],,
+        'azure''azure'::  [[
+                'active_directory''active_directory',,    # Azure AD is global# Azure AD is global
+                'dns''dns',,                            # Azure DNS is global# Azure DNS is global
+        ]],,
+        'gcp''gcp'::  [[
+                'iam''iam',,                            # GCP IAM is global# GCP IAM is global
+                'dns''dns'                              # Cloud DNS is global# Cloud DNS is global
+        ]]
+}}
+# Usage in collector# Usage in collector
+defdef  should_query_in_regionshould_query_in_region((service_nameservice_name,, region region))::
+        ifif service_name  service_name inin GLOBAL_SERVICES GLOBAL_SERVICES[['aws''aws']]::
+                returnreturn region  region ====  'us-east-1''us-east-1'    # Query once in primary region# Query once in primary region
+        returnreturn  TrueTrue    # Query in all regions# Query in all regions
+python
+
+--- Page 22 ---
+Provider Context Mocking Example
+classclass  TerraformVariableResolverTerraformVariableResolver::
+        """"""
+    Resolves Terraform variables across multiple files    Resolves Terraform variables across multiple files
+    Priority: CLI args > terraform.tfvars > *.auto.tfvars > variable defaults    Priority: CLI args > terraform.tfvars > *.auto.tfvars > variable defaults
+    """    """
+        defdef  __init____init__((selfself,, root_path root_path))::
+        self        self..variables variables ==  {{}}
+        self        self..localslocals  ==  {{}}
+        self        self..load_variable_filesload_variable_files((root_pathroot_path))
+        
+        defdef  load_variable_filesload_variable_files((selfself,, path path))::
+                # 1. Load variable defaults from *.tf files# 1. Load variable defaults from *.tf files
+                # 2. Load terraform.tfvars# 2. Load terraform.tfvars
+                # 3. Load *.auto.tfvars (alphabetically)# 3. Load *.auto.tfvars (alphabetically)
+                # 4. Apply CLI overrides (if provided)# 4. Apply CLI overrides (if provided)
+                passpass
+        
+        defdef  resolve_variableresolve_variable((selfself,, var_reference var_reference))::
+                """"""
+        Resolve var.name or local.name        Resolve var.name or local.name
+        Handle complex types: lists, maps, objects        Handle complex types: lists, maps, objects
+        """        """
+                ifif var_reference var_reference..startswithstartswith(('var.''var.'))::
+            var_name             var_name == var_reference var_reference[[44::]]
+                        returnreturn self self..variablesvariables..getget((var_namevar_name))
+                elifelif var_reference var_reference..startswithstartswith(('local.''local.'))::
+            local_name             local_name == var_reference var_reference[[66::]]
+                        returnreturn self self..localslocals..getget((local_namelocal_name))
+                returnreturn  NoneNone
+python
+
+--- Page 23 ---
+Checkov Integration Pattern (Recommended)
+classclass  CloudContextMockerCloudContextMocker::
+        """"""
+    Simulates cloud environment state for IaC evaluation    Simulates cloud environment state for IaC evaluation
+    Enables cross-resource misconfiguration detection    Enables cross-resource misconfiguration detection
+    """    """
+        defdef  __init____init__((selfself))::
+        self        self..resources resources ==  {{}}    # Store all parsed resources# Store all parsed resources
+        self        self..relationships relationships ==  {{}}    # Map resource dependencies# Map resource dependencies
+        
+        defdef  add_resourceadd_resource((selfself,, resource_type resource_type,, resource_name resource_name,, config config))::
+        resource_id         resource_id ==  f"f"{{resource_typeresource_type}}..{{resource_nameresource_name}}""
+        self        self..resourcesresources[[resource_idresource_id]]  == config config
+        self        self.._build_relationships_build_relationships((resource_idresource_id,, config config))
+        
+        defdef  _build_relationships_build_relationships((selfself,, resource_id resource_id,, config config))::
+                # Example: aws_instance references aws_security_group# Example: aws_instance references aws_security_group
+                ifif  'vpc_security_group_ids''vpc_security_group_ids'  inin config config::
+                        forfor sg_ref  sg_ref inin config config[['vpc_security_group_ids''vpc_security_group_ids']]::
+                self                self..relationshipsrelationships[[resource_idresource_id]]  ==  {{
+                                        'security_groups''security_groups'::  [[sg_refsg_ref]]
+                                }}
+        
+        defdef  evaluate_security_group_rulesevaluate_security_group_rules((selfself,, instance_id instance_id))::
+                """"""
+        Check if an instance's security groups allow risky access        Check if an instance's security groups allow risky access
+        Even if the instance config looks fine        Even if the instance config looks fine
+        """        """
+        sgs         sgs == self self..relationshipsrelationships..getget((instance_idinstance_id,,  {{}}))..getget(('security_groups''security_groups',,  [[]]))
+        findings         findings ==  [[]]
+                forfor sg_ref  sg_ref inin sgs sgs::
+            sg_config             sg_config == self self..resourcesresources..getget((sg_refsg_ref))
+                        ifif sg_config sg_config::
+                                # Evaluate SG rules against instance context# Evaluate SG rules against instance context
+                                ifif self self.._has_open_port_has_open_port((sg_configsg_config,, port port==2222))::
+                    findings                    findings..appendappend(({{
+                                                'issue''issue'::  'SSH exposed via security group''SSH exposed via security group',,
+                                                'resource''resource':: instance_id instance_id,,
+                                                'related_resource''related_resource':: sg_ref sg_ref
+                                        }}))
+                returnreturn findings findings
+python
+
+--- Page 24 ---
+Next Steps for Implementation
+Critical Path (Build Order)
+1. Week 0 - Safety First:
+Build lab_nuke.py script BEFORE lab deployment
+Test nuke script in isolated AWS account
+Set up .gitignore  with credential patterns
+Install pre-commit hooks (detect-secrets)
+2. Week 1-2 - Foundation with Global Service Registry:
+Set up project structure
+fromfrom checkov checkov..terraformterraform..runner runner importimport Runner Runner
+fromfrom checkov checkov..runner_filter runner_filter importimport RunnerFilter RunnerFilter
+classclass  CheckovIntegrationCheckovIntegration::
+        """"""
+    Leverage Checkov's AST parsing + add custom rules    Leverage Checkov's AST parsing + add custom rules
+    """    """
+        defdef  __init____init__((selfself,, tf_directory tf_directory))::
+        self        self..runner runner == Runner Runner(())
+        self        self..tf_directory tf_directory == tf_directory tf_directory
+        
+        defdef  scan_with_custom_rulesscan_with_custom_rules((selfself,, custom_rules_path custom_rules_path))::
+                # 1. Run Checkov's built-in checks# 1. Run Checkov's built-in checks
+        checkov_results         checkov_results == self self..runnerrunner..runrun((
+            root_folder            root_folder==selfself..tf_directorytf_directory,,
+            runner_filter            runner_filter==RunnerFilterRunnerFilter(())
+                ))
+                
+                # 2. Load custom YAML rules# 2. Load custom YAML rules
+        custom_findings         custom_findings == self self.._apply_custom_rules_apply_custom_rules((custom_rules_pathcustom_rules_path))
+                
+                # 3. Merge findings# 3. Merge findings
+                returnreturn self self.._merge_findings_merge_findings((checkov_resultscheckov_results,, custom_findings custom_findings))
+        
+        defdef  _apply_custom_rules_apply_custom_rules((selfself,, rules_path rules_path))::
+                # Parse TF files using Checkov's parser# Parse TF files using Checkov's parser
+                # Apply your parent-child logic rules# Apply your parent-child logic rules
+                # Return findings in standardized format# Return findings in standardized format
+                passpass
+
+--- Page 25 ---
+Implement Global Service Registry
+AWS collector with throttling protection (exponential backoff)
+S3 + Security Groups collectors
+Basic YAML rules engine with parent-child logic support
+3. Week 3-4 - MVP Core:
+EC2, IAM, RDS collectors
+Implement parent-child rule evaluation
+Web dashboard skeleton (Flask + React + DuckDB)
+Finding suppression feature (with reason field)
+CLI tool with remediation preview
+4. Week 5-6 - IaC & Lab:
+Decide: Custom python-hcl2 wrapper vs Checkov integration
+Implement AST-based Terraform parser with variable resolution
+Build Validation Lab (AWS, 5 seeded issues)
+Deploy lab ONLY in us-east-2 with mandatory tags
+CIS compliance mapping
+5. Week 7-8 - Polish & Test:
+Unit tests for parent-child rule logic
+Test nuke script automation (cron job)
+Documentation (README + API docs + rule writing guide)
+CSV/JSON export
+Bug fixes
+Key Decision Points (Week 1)
+ Parser Selection: Custom python-hcl2 wrapper vs Checkov/KICS integration?
+Recommendation: Start with Checkov integration for MVP, custom wrapper if extensibility needed
+ Rule Format: Stick with YAML or migrate to Rego immediately?
+Recommendation: YAML for MVP, plan Rego migration for Phase 3
+ Database: Confirm DuckDB for analytical queries
+Recommendation: Yes, DuckDB provides better compliance scoring queries
+ Auth: OIDC/IAM Roles or environment variables?
+Recommendation: Support both, prioritize IAM Roles in documentation
+
+--- Page 26 ---
+Updated Technology Decisions Matrix
+Component Option A Option B Recommendation
+IaC Parser Custom python-hcl2  wrapper Checkov integrationCheckov (production-ready, maintained)
+Database SQLite DuckDB DuckDB (better analytics)
+Rules EngineYAML (MVP) → Rego (Phase 3)Rego immediatelyYAML → Rego (gradual learning)
+Auth Environment vars OIDC/IAM RolesBoth (IAM Roles prioritized)
+Backend API Flask FastAPI Flask (simpler for MVP)
+Updated Roadmap with Enhancements
+Week 1-2: Foundation + Safety
+Global Service Registry implementation
+AWS collector with exponential backoff
+Parent-child rule schema design
+Lab nuke script (PRIORITY #1)
+.gitignore  validation + pre-commit hooks
+Week 3-4: MVP Core + UX
+Dashboard with finding suppression
+Remediation preview (manual + CLI)
+DuckDB schema for suppressions + scan history
+Parent-child rule evaluation logic
+Week 5-6: IaC + Lab
+AST-based Terraform parser (Checkov integration)
+Variable resolution from tfvars
+Validation lab (AWS only, us-east-2, mandatory tags)
+Lab integrity check (terraform plan --detailed-exitcode )
+
+--- Page 27 ---
+Week 7-8: Polish
+Unit tests (parent-child logic, global services)
+Documentation (rule writing guide)
+Performance testing (1000+ resources)
+Week 9-12: Multi-Cloud (Phase 2)
+Azure & GCP collectors (with global service handling)
+Expand to 25+ rules with parent-child relationships
+Provider context mocking for IaC
+Week 13+: Automation (Phase 3)
+Rego migration (gradual, with compatibility layer)
+CI/CD integrations (GitHub Actions, GitLab CI)
+Scheduled scans with drift detection
+Auto-remediation suggestions engine
+CloudVault-Inspired Enhancements
+Overview
+After analyzing CloudVault (a production-grade cloud storage security scanner), we've identified practical
+patterns to improve our scanner's UX and functionality without overcomplicating the architecture.
+1. Enhanced Filtering System (Phase 2)
+Problem: Users need flexible ways to filter findings beyond basic dropdowns.
+Solution: Add query syntax for power users while keeping UI simple.
+Filter Syntax
+python
+
+--- Page 28 ---
+Implementation Structure
+# Basic equality# Basic equality
+----filterfilter  "severity=CRITICAL""severity=CRITICAL"
+# Multiple values (OR logic)# Multiple values (OR logic)
+----filterfilter  "severity=CRITICAL,HIGH""severity=CRITICAL,HIGH"
+# Comparison operators# Comparison operators
+----filterfilter  "risk_score>=75""risk_score>=75"
+# Pattern matching# Pattern matching
+----filterfilter  "resource_name~*-prod-*""resource_name~*-prod-*"
+# Combined filters (AND logic)# Combined filters (AND logic)
+----filterfilter  "severity=CRITICAL""severity=CRITICAL"  ----filterfilter  "provider=aws""provider=aws"
+# Exclude patterns# Exclude patterns
+----exclude exclude "resource_name~*-test-*""resource_name~*-test-*"
+python
+
+--- Page 29 ---
+CLI Integration
+# cloudscanner/filtering/query_parser.py# cloudscanner/filtering/query_parser.py
+fromfrom dataclasses  dataclasses importimport dataclass dataclass
+importimport re re
+@dataclass@dataclass
+classclass  FilterConditionFilterCondition::
+    field    field::  strstr
+    operator    operator::  strstr    # =, !=, >, >=, <, <=, ~# =, !=, >, >=, <, <=, ~
+    value    value::  anyany
+classclass  QueryParserQueryParser::
+        """Parse filter expressions into executable conditions""""""Parse filter expressions into executable conditions"""
+        
+    OPERATORS     OPERATORS ==  {{
+                '=''='::  lambdalambda a a,, b b:: a  a ==== b b,,
+                '~''~'::  lambdalambda a a,, b b:: re re..matchmatch((bb..replacereplace(('*''*',,  '.*''.*')),,  strstr((aa))))
+        }}
+        
+        defdef  parseparse((selfself,, filter_str filter_str::  strstr))  -->> FilterCondition FilterCondition::
+                """Parse "field=value" into FilterCondition""""""Parse "field=value" into FilterCondition"""
+                forfor op  op inin  [['>=''>=',,  '<=''<=',,  '!=''!=',,  '=''=',,  '>''>',,  '<''<',,  '~''~']]::
+                        ifif op  op inin filter_str filter_str::
+                field                field,, value  value == filter_str filter_str..splitsplit((opop,,  11))
+                                returnreturn FilterCondition FilterCondition((fieldfield..stripstrip(()),, op op,, value value..stripstrip(())))
+        
+        defdef  applyapply((selfself,, condition condition:: FilterCondition FilterCondition,, obj obj::  dictdict))  -->>  boolbool::
+                """Check if object matches condition""""""Check if object matches condition"""
+        field_value         field_value == obj obj..getget((conditioncondition..fieldfield))
+                returnreturn self self..OPERATORSOPERATORS[[conditioncondition..operatoroperator]]((field_valuefield_value,, condition condition..valuevalue))
+python
+
+--- Page 30 ---
+Benefits:
+Power users get advanced queries
+Simple users still use UI dropdowns
+Easy to extend with new operators
+No complex query language needed
+2. Rich Terminal Visualization (Phase 2)
+Problem: Basic text output lacks visual appeal and readability.
+Solution: Use rich library for professional terminal UI.
+Install Rich
+Enhanced Dashboard
+@click@click..commandcommand(())
+@click@click..optionoption(('--filter''--filter',, multiple multiple==TrueTrue,,  helphelp=='Filter findings''Filter findings'))
+@click@click..optionoption(('--exclude''--exclude',, multiple multiple==TrueTrue,,  helphelp=='Exclude patterns''Exclude patterns'))
+defdef  dashboarddashboard((filterfilter,, exclude exclude))::
+    parser     parser == QueryParser QueryParser(())
+        
+    include_filters     include_filters ==  [[parserparser..parseparse((ff))  forfor f  f inin  filterfilter]]
+    exclude_filters     exclude_filters ==  [[parserparser..parseparse((ee))  forfor e  e inin exclude exclude]]
+        
+        # Apply filters to findings# Apply filters to findings
+    filtered     filtered == findings findings
+        forfor f  f inin include_filters include_filters::
+        filtered         filtered ==  [[x x forfor x  x inin filtered  filtered ifif parser parser..applyapply((ff,, x x))]]
+bash
+pip pip installinstall rich rich>=>=13.013.0.0.0
+python
+
+--- Page 31 ---
+# cloudscanner/dashboard/rich_dashboard.py# cloudscanner/dashboard/rich_dashboard.py
+fromfrom rich rich..console console importimport Console Console
+fromfrom rich rich..table table importimport Table Table
+fromfrom rich rich..panel panel importimport Panel Panel
+fromfrom rich rich..tree tree importimport Tree Tree
+console console == Console Console(())
+classclass  RichDashboardRichDashboard::
+        defdef  display_summarydisplay_summary((selfself,, findings findings))::
+                """Display summary with color-coded severity""""""Display summary with color-coded severity"""
+                
+        severity_counts         severity_counts ==  {{}}
+                forfor f  f inin findings findings::
+            sev             sev == f f[['severity''severity']]
+            severity_counts            severity_counts[[sevsev]]  == severity_counts severity_counts..getget((sevsev,,  00))  ++  11
+                
+        summary         summary ==  f"""f"""
+        [bold]Total Findings:[/bold]         [bold]Total Findings:[/bold] {{lenlen((findingsfindings))}}
+                
+        [red]● CRITICAL:[/red]         [red]● CRITICAL:[/red] {{severity_countsseverity_counts..getget(('CRITICAL''CRITICAL',,  00))}}
+        [yellow]● HIGH:[/yellow]         [yellow]● HIGH:[/yellow] {{severity_countsseverity_counts..getget(('HIGH''HIGH',,  00))}}
+        [blue]● MEDIUM:[/blue]         [blue]● MEDIUM:[/blue] {{severity_countsseverity_counts..getget(('MEDIUM''MEDIUM',,  00))}}
+        """        """
+                
+        console        console..printprint((PanelPanel((summarysummary,, title title=="Security Scan Summary""Security Scan Summary",, border_style border_style=="cyan""cyan"))))
+        
+        defdef  display_findings_tabledisplay_findings_table((selfself,, findings findings))::
+                """Display findings in formatted table""""""Display findings in formatted table"""
+                
+        table         table == Table Table((titletitle=="Security Findings""Security Findings",, show_header show_header==TrueTrue))
+        table        table..add_columnadd_column(("Severity""Severity",, style style=="bold""bold"))
+        table        table..add_columnadd_column(("Resource""Resource",, style style=="yellow""yellow"))
+        table        table..add_columnadd_column(("Rule""Rule"))
+        table        table..add_columnadd_column(("Risk""Risk",, justify justify=="right""right"))
+                
+                forfor finding  finding inin findings findings[[::2020]]::
+            sev_color             sev_color ==  {{
+                                'CRITICAL''CRITICAL'::  'red''red',,
+                                'HIGH''HIGH'::  'yellow''yellow',,
+                                'MEDIUM''MEDIUM'::  'blue''blue',,
+                                'LOW''LOW'::  'green''green'
+                        }}..getget((findingfinding[['severity''severity']],,  'white''white'))
+                        
+            table            table..add_rowadd_row((
+
+--- Page 34 ---
+Attack Chain Visualization
+rule_idrule_id::  "aws-s3-001""aws-s3-001"
+namename::  "S3 Bucket Publicly Accessible""S3 Bucket Publicly Accessible"
+severityseverity::  "CRITICAL""CRITICAL"
+mitre_attackmitre_attack::
+    tacticstactics::
+        --  "Collection""Collection"
+        --  "Exfiltration""Exfiltration"
+    techniquestechniques::
+        --  idid::  "T1530""T1530"
+            namename::  "Data from Cloud Storage""Data from Cloud Storage"
+        --  idid::  "T1537""T1537"
+            namename::  "Transfer Data to Cloud Account""Transfer Data to Cloud Account"
+descriptiondescription::  ||
+  Publicly accessible S3 bucket allows unauthorized data access.  Publicly accessible S3 bucket allows unauthorized data access.
+    
+    Attack ScenarioAttack Scenario::
+  1. Attacker discovers public bucket via reconnaissance  1. Attacker discovers public bucket via reconnaissance
+  2. Downloads sensitive data (T1530)  2. Downloads sensitive data (T1530)
+  3. Exfiltrates to attacker  3. Exfiltrates to attacker--controlled cloud storage (T1537)controlled cloud storage (T1537)
+python
+
+--- Page 36 ---
+Educational value for learners
+4. Trend Sparklines (Phase 2)
+Problem: Hard to see security posture trends over time.
+Solution: Add ASCII sparklines to show trends.
+Implementation
+Example Output:
+python
+# cloudscanner/history/trends.py# cloudscanner/history/trends.py
+defdef  generate_sparklinegenerate_sparkline((valuesvalues::  listlist))  -->>  strstr::
+        """Generate ASCII sparkline from values""""""Generate ASCII sparkline from values"""
+        
+        ifif  notnot values values::
+                returnreturn  """"
+        
+    min_val     min_val ==  minmin((valuesvalues))
+    max_val     max_val ==  maxmax((valuesvalues))
+    range_val     range_val == max_val  max_val -- min_val  min_val oror  11
+        
+        # Unicode block elements for sparklines# Unicode block elements for sparklines
+    bars     bars ==  " ▁▂▃ ▄ ▅▆▇ █"" ▁▂▃ ▄ ▅▆▇ █"
+        
+    sparkline     sparkline ==  """"
+        forfor val  val inin values values::
+        index         index ==  intint((((((val val -- min_val min_val))  // range_val range_val))  **  ((lenlen((barsbars))  --  11))))
+        sparkline         sparkline +=+= bars bars[[indexindex]]
+        
+        returnreturn sparkline sparkline
+# Usage# Usage
+compliance_scores compliance_scores ==  [[6565,,  6868,,  7272,,  7070,,  7575,,  7878,,  8282]]
+trend trend == generate_sparkline generate_sparkline((compliance_scorescompliance_scores))
+printprint((f"Compliance Score: f"Compliance Score: {{compliance_scorescompliance_scores[[--11]]}}% % {{trendtrend}} (7 days)" (7 days)"))
+Compliance Score: 82% ▃ ▄ ▅▅▆▇ █ (7 days)Compliance Score: 82% ▃ ▄ ▅▅▆▇ █ (7 days)
+Critical Findings: 3 █ ▇▆▅▃▂ ▁  (7 days)Critical Findings: 3 █ ▇▆▅▃▂ ▁  (7 days)
+
+--- Page 37 ---
+Benefits:
+Quick visual trend identification
+Minimal screen space
+No external charting libraries
+Works in any terminal
+5. Alert System Architecture (Phase 3)
+Problem: Need to notify teams of critical findings.
+Solution: Modular alert system supporting multiple channels.
+Architecture
+Base Alert Interface
+cloudscanner/alerts/cloudscanner/alerts/
+├── __init__.py├── __init__.py
+├── base.py          # Abstract AlertChannel class├── base.py          # Abstract AlertChannel class
+├── slack.py         # Slack webhook integration├── slack.py         # Slack webhook integration
+├── email.py         # SMTP email alerts├── email.py         # SMTP email alerts
+└── teams.py         # Microsoft Teams└── teams.py         # Microsoft Teams
+python
+# cloudscanner/alerts/base.py# cloudscanner/alerts/base.py
+fromfrom abc  abc importimport ABC ABC,, abstractmethod abstractmethod
+classclass  AlertChannelAlertChannel((ABCABC))::
+        """Abstract base for alert channels""""""Abstract base for alert channels"""
+        
+        @abstractmethod@abstractmethod
+        defdef  sendsend((selfself,, finding finding::  dictdict))::
+                """Send alert for finding""""""Send alert for finding"""
+                passpass
+        
+        defdef  should_alertshould_alert((selfself,, finding finding::  dictdict,, severity_filter severity_filter::  listlist))  -->>  boolbool::
+                """Check if finding meets alert criteria""""""Check if finding meets alert criteria"""
+                returnreturn finding finding[['severity''severity']]  inin severity_filter severity_filter
+
+--- Page 39 ---
+Usage:
+Benefits:
+Real-time notifications
+Pluggable architecture
+Easy to add new channels
+Configurable severity thresholds
+Updated Technology Stack
+Add to requirements.txt:
+Integration with Existing Features
+Finding Suppression + Filtering
+@click@click..commandcommand(())
+@click@click..optionoption(('--alert-slack''--alert-slack',,  helphelp=='Slack webhook URL''Slack webhook URL'))
+@click@click..optionoption(('--alert-severity''--alert-severity',, default default=='CRITICAL,HIGH''CRITICAL,HIGH',,  helphelp=='Alert severity threshold''Alert severity threshold'))
+defdef  scanscan((alert_slackalert_slack,, alert_severity alert_severity))::
+        
+        ifif alert_slack alert_slack::
+                fromfrom cloudscanner cloudscanner..alertsalerts..slack slack importimport SlackAlert SlackAlert
+                
+        alerter         alerter == SlackAlert SlackAlert((alert_slackalert_slack))
+        severity_filter         severity_filter == alert_severity alert_severity..splitsplit((','','))
+                
+                forfor finding  finding inin findings findings::
+                        ifif alerter alerter..should_alertshould_alert((findingfinding,, severity_filter severity_filter))::
+                alerter                alerter..sendsend((findingfinding))
+bash
+cloudscanner scan cloudscanner scan \\
+  --alert-slack https://hooks.slack.com/  --alert-slack https://hooks.slack.com/..... . \\
+  --alert-severity CRITICAL,HIGH  --alert-severity CRITICAL,HIGH
+rich>=13.0.0          # Terminal formattingrich>=13.0.0          # Terminal formatting
+pyparsing>=3.0.0      # Optional: advanced filter parsingpyparsing>=3.0.0      # Optional: advanced filter parsing
+
+--- Page 41 ---
+v2.0: Added parent-child rule logic, global service registry, AST parsing, lab safety protocols, finding
+suppression, Rego roadmap, updated tech stack (DuckDB, OIDC), new risks R7-R9, CloudVault-inspired
+enhancements (filtering, Rich UI, MITRE mapping, alerts)

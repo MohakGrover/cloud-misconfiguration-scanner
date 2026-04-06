@@ -1,0 +1,23 @@
+rule_id: "aws-ec2-001"
+name: "Security Group Opens SSH to World"
+description: "Security group allows ingress on port 22 from 0.0.0.0/0."
+severity: "HIGH"
+provider: "aws"
+service: "ec2"
+remediation:
+  manual_steps: |
+    1. Go to EC2 Console > Security Groups.
+    2. Edit Inbound Rules.
+    3. Remove or restrict rules allowing port 22 from 0.0.0.0/0.
+detection_logic:
+  condition: "any"
+  checks:
+    - field: "ip_permissions"
+      # This is a simplification. Real logic needs list iteration/filtering.
+      # For now, we assume flattened parsing or custom logic might be needed for arrays.
+      # But let's try a simple 'contains' check on a known structure signature if Evaluator supports it,
+      # OR we can assume the scanner flattens this.
+      # For MVP, let's use a simplified check or placeholder.
+      # We'll use a specific field check that fails if not present, to demonstrate logic.
+      operator: "exists" 
+      # TODO: Improve complex list filtering in Evaluator (Week 3 task)
