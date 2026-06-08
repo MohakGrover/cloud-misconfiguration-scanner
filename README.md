@@ -32,7 +32,8 @@
 
 ## Why I Built This
 
-- While studying cloud security and CIS benchmarks, I noticied how easy it is to accidentally expose an S3 bucket or create an IAM role with wildcard permissions.A single misconfiguration can compromise an entire account.I built this to make a conitnous security checks accessible without needing a $50k/year CSPM subsciption.
+- While studying cloud security and CIS benchmarks, I noticed how easy it is to accidentally expose an S3 bucket or create an IAM role with wildcard permissions.A single misconfiguration can compromise an entire account.I built this to make a continuous security checks accessible without needing a $50k/year CSPM subscription — running entirely from 
+your terminal with no external dependencies.
 
 ## Getting Started
 
