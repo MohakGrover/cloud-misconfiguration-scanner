@@ -1,4 +1,4 @@
-# Cloud Misconfiguration Scanner (Cloud Scanner) 🚀
+# Cloud Misconfiguration Scanner (Cloud Scanner) 
 
 [![Security: Cloud](https://img.shields.io/badge/Security-Cloud-blue.svg)](https://github.com/MohakGrover/cloud-misconfiguration-scanner)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9+-yellow.svg)](https://python.org)
@@ -7,7 +7,7 @@
 
 ---
 
-## ✨ Features
+##  Features
 
 - **Multi-Cloud Support**: Currently implemented for **AWS** (S3, IAM, EC2, RDS).
 - **Rule-Based Engine**: Evaluate resources using a customizable YAML-based rule definitions.
@@ -22,7 +22,7 @@
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Backend**: Python 3.x, Flask, Boto3 (AWS SDK), DuckDB (Local Data), Click, Rich.
 - **Frontend**: React (with Vite/Next.js integration).
@@ -34,7 +34,7 @@
 
 - While studying cloud security and CIS benchmarks, I noticied how easy it is to accidentally expose an S3 bucket or create an IAM role with wildcard permissions.A single misconfiguration can compromise an entire account.I built this to make a conitnous security checks accessible without needing a $50k/year CSPM subsciption.
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -66,7 +66,7 @@
 
 ---
 
-## 📖 Usage
+## Usage
 
 ### CLI Scanning
 
@@ -96,7 +96,7 @@ Access the dashboard at `http://localhost:5173`.
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 .
@@ -111,13 +111,13 @@ Access the dashboard at `http://localhost:5173`.
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
