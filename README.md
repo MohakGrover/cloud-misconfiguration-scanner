@@ -1,6 +1,6 @@
 # Cloud Misconfiguration Scanner (Cloud Scanner) 🚀
 
-[![Security: Cloud](https://img.shields.io/badge/Security-Cloud-blue.svg)](https://github.com/mohak/cloud-misconfiguration-scanner)
+[![Security: Cloud](https://img.shields.io/badge/Security-Cloud-blue.svg)](https://github.com/MohakGrover/cloud-misconfiguration-scanner)
 [![Python: 3.9+](https://img.shields.io/badge/Python-3.9+-yellow.svg)](https://python.org)
 
 **Cloud Scanner** is a powerful, automated cloud security scanner designed to identify misconfigurations across major cloud providers (initially supporting AWS). It analyzes your cloud infrastructure against security best practices, providing actionable findings and remediation steps.
@@ -30,6 +30,10 @@
 
 ---
 
+## Why I Built This
+
+- While studying cloud security and CIS benchmarks, I noticied how easy it is to accidentally expose an S3 bucket or create an IAM role with wildcard permissions.A single misconfiguration can compromise an entire account.I built this to make a conitnous security checks accessible without needing a $50k/year CSPM subsciption.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -42,7 +46,7 @@
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/cloud-misconfiguration-scanner.git
+   git clone https://github.com/MohakGrover/cloud-misconfiguration-scanner.git
    cd cloud-misconfiguration-scanner
    ```
 
